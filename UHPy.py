@@ -8,7 +8,35 @@ class UH():
         self.UHPR = []
         self.UHGyroAccelData = []
         #コネクトする
-        self.ser = serial.Serial('/dev/cu.usbserial-AK05D8TP', 115200,timeout=1)
+        #self.ser = serial.Serial('/dev/cu.usbserial-AK05D8TP', 115200,timeout=1)
+
+        self.ser = serial.Serial()
+        self.ser.baudrate = 115200
+        self.ser.timeout = 1
+
+        ports = list_ports.comports()
+
+        devices = []
+
+        for info in ports:
+            devices.append(info.device)
+
+        pattern = r"/dev/cu.usbserial"
+
+        for i in range(len(devices)):
+            match = re.match(pattern, devices[i])
+            if match:
+                self.ser.port = devices[i]
+                print(str(devices[i]))
+                break
+        
+        try:
+            self.ser.open()
+            print("open")
+
+        except:
+            print("can't open")
+
 
     def updatePhotosensors(self):
         try:
