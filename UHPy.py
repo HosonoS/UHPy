@@ -1,5 +1,7 @@
 import serial
 import time
+from serial.tools import list_ports
+import re
 
 class UH():
     
@@ -20,16 +22,13 @@ class UH():
 
         for info in ports:
             devices.append(info.device)
+            
+        for deviceName in devices:
+            print(deviceName)
 
-        pattern = r"/dev/cu.usbserial"
+        print("使いたいポート名を入力してください>>",end="")
+        self.ser.port = input()
 
-        for i in range(len(devices)):
-            match = re.match(pattern, devices[i])
-            if match:
-                self.ser.port = devices[i]
-                print(str(devices[i]))
-                break
-        
         try:
             self.ser.open()
             print("open")
