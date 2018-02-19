@@ -17,4 +17,4 @@ pip install pyserial
 MIT
 
 ## Author
-Satoshi Hosono
+Satosh
