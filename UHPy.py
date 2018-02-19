@@ -23,6 +23,7 @@ class UH():
         for info in ports:
             devices.append(info.device)
             
+        print("以下のシリアルポートがパソコンに接続されています")
         for deviceName in devices:
             print(deviceName)
 
