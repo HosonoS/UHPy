@@ -135,10 +135,9 @@ class UH():
 #            difference = len(targetGesture1PR) - 100
 #            for i in range(difference):
 #                targetGesture1PR[i]
-
-#        print(targetGesture1PR)
-#        print(len(targetGesture1PR))
-#        print(type(self.UHPR))
+#
+        print("3秒待機してください")
+        time.sleep(3)
 
         print("識別したいジェスチャの2つ目を行なってください")
         
@@ -167,7 +166,6 @@ class UH():
                           random_state=0
                           )
         
-        print(len(X),len(y))
         train_index, test_index = next(ss.split(X,y))
 
         X_train,X_test = X[train_index],X[test_index]
@@ -179,6 +177,17 @@ class UH():
 
         self.clfLogistic = LogisticRegression()
         self.clfLogistic.fit(X_train_std,y_train)
+
+    def checkGesture(self):
+        print("チェック用のジェスチャを入力してください")
+        time.sleep(5)
+        checkFlag = self.clfLogistic.predict(self.UHPR)
+
+        if checkFlag == 0:
+            print("手を閉じています")
+
+        else:
+            print("手を開いています")
 
     def loop():
         stopFlag = True
@@ -193,11 +202,7 @@ class UH():
 
 if __name__ == '__main__':
     uhand = UH()
-    stopflag = True
-
-    while stopflag:
-        uhand.updateUH3DGyroAccel()
-        print(uhand.UHGyroAccelData)
-        time.sleep(1)
+    uhand.gestureLogisticClassifier()
+    uhand.checkGesture()
 
 
