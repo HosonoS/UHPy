@@ -8,6 +8,7 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import ShuffleSplit
 from sklearn.preprocessing import StandardScaler
+from sklearn import svm
 
 class UH():
     
@@ -18,8 +19,10 @@ class UH():
         #コネクトする
         #self.ser = serial.Serial('/dev/cu.usbserial-AK05D8TP', 115200,timeout=1)
 
+        self.X_train_std,self.y_train,self.X_test_std,y_test = None,None,None,None
+
         self.clfLogistic = LogisticRegression()
-        
+        self.clfSVM = svm.SVC()
 
         self.ser = serial.Serial()
         self.ser.baudrate = 115200
@@ -169,19 +172,23 @@ class UH():
         train_index, test_index = next(ss.split(X,y))
 
         X_train,X_test = X[train_index],X[test_index]
-        y_train,y_test = y[train_index],y[test_index]
+        self.y_train,self.y_test = y[train_index],y[test_index]
 
         sc = StandardScaler()
-        X_train_std = sc.fit_transform(X_train)
-        X_test_std = sc.transform(X_test)
+        self.X_train_std = sc.fit_transform(X_train)
+        self.X_test_std = sc.transform(X_test)
 
         self.clfLogistic = LogisticRegression()
-        self.clfLogistic.fit(X_train_std,y_train)
+        self.clfLogistic.fit(self.X_train_std,self.y_train)
+
+    def gestureSVMClassifier(self):
+        self.clfSVM.fit(self.X_train_std,self.y_train)
+        
 
     def checkGesture(self):
         print("チェック用のジェスチャを入力してください")
         time.sleep(5)
-        checkFlag = self.clfLogistic.predict(self.UHPR)
+        checkFlag = self.clfSVM.predict(self.UHPR)
 
         if checkFlag == 0:
             print("手を閉じています")
@@ -203,6 +210,7 @@ class UH():
 if __name__ == '__main__':
     uhand = UH()
     uhand.gestureLogisticClassifier()
+    uhand.gestureSVMClassifier()
     uhand.checkGesture()
 
 
