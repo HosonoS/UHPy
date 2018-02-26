@@ -114,7 +114,8 @@ class UH():
         except:
             pass
 
-    def gestureLogisticClassifier(self):
+
+    def gestureDataCollection(self):
         targetGesture1PR = np.array([0,0,0,0,0,0,0,0])
         targetGesture2PR = np.array([0,0,0,0,0,0,0,0])
 
@@ -178,6 +179,7 @@ class UH():
         self.X_train_std = sc.fit_transform(X_train)
         self.X_test_std = sc.transform(X_test)
 
+    def gestureLogisticClassifier(self):
         self.clfLogistic = LogisticRegression()
         self.clfLogistic.fit(self.X_train_std,self.y_train)
 
@@ -209,7 +211,7 @@ class UH():
 
 if __name__ == '__main__':
     uhand = UH()
-    uhand.gestureLogisticClassifier()
+    uhand.gestureDataCollection()
     uhand.gestureSVMClassifier()
     uhand.checkGesture()
 
