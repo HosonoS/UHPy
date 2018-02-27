@@ -16,7 +16,6 @@ class UH():
         self.UHAngle = []
         self.UHPR = []
         self.UHGyroAccelData = []
-        #コネクトする
         #self.ser = serial.Serial('/dev/cu.usbserial-AK05D8TP', 115200,timeout=1)
 
         self.X_train_std,self.y_train,self.X_test_std,y_test = None,None,None,None
@@ -24,6 +23,8 @@ class UH():
         self.clfLogistic = LogisticRegression()
         self.clfSVM = svm.SVC()
 
+
+        #Unlimitedhandとの接続に関する部分
         self.ser = serial.Serial()
         self.ser.baudrate = 115200
         self.ser.timeout = 1
@@ -32,23 +33,40 @@ class UH():
 
         devices = []
 
-        for info in ports:
-            devices.append(info.device)
-            
-        print("以下のシリアルポートがパソコンに接続されています")
-        for deviceName in devices:
-            print(deviceName)
-
-        print("使いたいポート名を入力してください>>",end="")
-        self.ser.port = input()
 
         try:
-            self.ser.open()
-            print("open")
+            if sys.argv[1] == "manual":
+
+                for info in ports:
+                    devices.append(info.device)
+                    
+                print("以下のシリアルポートがパソコンに接続されています")
+                for deviceName in devices:
+                    print(deviceName)
+        
+                print("使いたいポート名を入力してください>>",end="")
+                self.ser.port = input()
+        
+                try:
+                    self.ser.open()
+                    print("open")
+        
+                except:
+                    print("can't open")
+                    sys.exit()
 
         except:
-            print("can't open")
-            sys.exit()
+            for info in ports:
+                devices.append(info.device)
+
+            self.ser.port = devices[2]
+            
+            try:
+                print("デバイスと接続しています")
+                self.ser.open()
+    
+            except:
+                sys.exit()
 
 
     def updatePhotosensors(self):
