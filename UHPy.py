@@ -26,8 +26,8 @@ class UH():
 
         #Unlimitedhandとの接続に関する部分
         self.ser = serial.Serial()
-        self.ser.baudrate = 115200
-        self.ser.timeout = 1
+        self.ser.__baudrate = 115200
+        self.ser.__timeout = 1
 
         ports = list_ports.comports()
 
@@ -55,7 +55,7 @@ class UH():
                     print("can't open")
                     sys.exit()
 
-        except:
+        except IndexError:
             for info in ports:
                 devices.append(info.device)
 
@@ -68,6 +68,8 @@ class UH():
             except:
                 sys.exit()
 
+        except:
+            print("デバイスが見つかりませんでした")
 
     def updatePhotosensors(self):
         try:
@@ -218,23 +220,21 @@ class UH():
             print(checkFlag)
             print("手を開いています")
 
-    def loop(self):
+    def loop(self,f):
         stopFlag = True
         
         while stopFlag:
             #以下にループさせたい処理を書いてください##
-            print("Hey")
-            
             ###########################################
             time.sleep(0.1)
 
-
+    def yeah(self):
+        print("yeah")
 
 if __name__ == '__main__':
     uhand = UH()
 #    uhand.gestureDataCollection()
 #    uhand.gestureLogisticClassifier()
 #    uhand.checkGesture()
-    uhand.loop()
-
-
+#    uhand.loop(readUHPR(uhand))
+    uhand.loop(uhand.yeah)
