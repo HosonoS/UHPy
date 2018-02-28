@@ -137,7 +137,7 @@ class UH():
         targetGesture1PR = np.array([0,0,0,0,0,0,0,0])
         targetGesture2PR = np.array([0,0,0,0,0,0,0,0])
 
-        print("識別したいジェスチャの1つ目を行なってください")
+        print("手を開いてください")
 
         #１つ目のジェスチャのデータ取得
         while len(targetGesture1PR) < 101:
@@ -161,7 +161,7 @@ class UH():
         print("3秒待機してください")
         time.sleep(3)
 
-        print("識別したいジェスチャの2つ目を行なってください")
+        print("手を閉じてください")
         
         #２つ目のジェスチャのデータ取得
         while len(targetGesture2PR) < 101:
@@ -208,19 +208,22 @@ class UH():
     def checkGesture(self):
         print("チェック用のジェスチャを入力してください")
         time.sleep(5)
-        checkFlag = self.clfSVM.predict(self.UHPR)
+        checkFlag = self.clfLogistic.predict(self.UHPR)
 
         if checkFlag == 0:
+            print(checkFlag)
             print("手を閉じています")
 
         else:
+            print(checkFlag)
             print("手を開いています")
 
-    def loop():
+    def loop(self):
         stopFlag = True
         
-        while stpoFlag:
+        while stopFlag:
             #以下にループさせたい処理を書いてください##
+            print("Hey")
             
             ###########################################
             time.sleep(0.1)
@@ -229,8 +232,9 @@ class UH():
 
 if __name__ == '__main__':
     uhand = UH()
-    uhand.gestureDataCollection()
-    uhand.gestureSVMClassifier()
-    uhand.checkGesture()
+#    uhand.gestureDataCollection()
+#    uhand.gestureLogisticClassifier()
+#    uhand.checkGesture()
+    uhand.loop()
 
 
