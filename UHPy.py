@@ -26,8 +26,8 @@ class UH():
 
         #Unlimitedhandとの接続に関する部分
         self.ser = serial.Serial()
-        self.ser.__baudrate = 115200
-        self.ser.__timeout = 1
+        self.ser.baudrate = 115200
+        self.ser.timeout = 1
 
         ports = list_ports.comports()
 
@@ -55,7 +55,7 @@ class UH():
                     print("can't open")
                     sys.exit()
 
-        except IndexError:
+        except:
             for info in ports:
                 devices.append(info.device)
 
@@ -68,8 +68,6 @@ class UH():
             except:
                 sys.exit()
 
-        except:
-            print("デバイスが見つかりませんでした")
 
     def updatePhotosensors(self):
         try:
@@ -210,31 +208,29 @@ class UH():
     def checkGesture(self):
         print("チェック用のジェスチャを入力してください")
         time.sleep(5)
-        checkFlag = self.clfLogistic.predict(self.UHPR)
+        checkFlag = self.clfSVM.predict(self.UHPR)
 
         if checkFlag == 0:
-            print(checkFlag)
             print("手を閉じています")
 
         else:
-            print(checkFlag)
             print("手を開いています")
 
-    def loop(self,f):
+    def loop():
         stopFlag = True
         
-        while stopFlag:
+        while stpoFlag:
             #以下にループさせたい処理を書いてください##
+            
             ###########################################
             time.sleep(0.1)
 
-    def yeah(self):
-        print("yeah")
+
 
 if __name__ == '__main__':
     uhand = UH()
-#    uhand.gestureDataCollection()
-#    uhand.gestureLogisticClassifier()
-#    uhand.checkGesture()
-#    uhand.loop(readUHPR(uhand))
-    uhand.loop(uhand.yeah)
+    uhand.gestureDataCollection()
+    uhand.gestureSVMClassifier()
+    uhand.checkGesture()
+
+
