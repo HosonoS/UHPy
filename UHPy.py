@@ -10,12 +10,14 @@ from sklearn.model_selection import ShuffleSplit
 from sklearn.preprocessing import StandardScaler
 from sklearn import svm
 
+
 class UH():
     
     def __init__(self):
         self.UHAngle = []
         self.UHPR = []
         self.UHGyroAccelData = []
+        self.UHQuaternion = []
         #self.ser = serial.Serial('/dev/cu.usbserial-AK05D8TP', 115200,timeout=1)
 
         self.X_train_std,self.y_train,self.X_test_std,y_test = None,None,None,None
@@ -23,6 +25,7 @@ class UH():
         self.clfLogistic = LogisticRegression()
         self.clfSVM = svm.SVC()
 
+        self.nowGesture = None
 
         #Unlimitedhandとの接続に関する部分
         self.ser = serial.Serial()
@@ -103,6 +106,29 @@ class UH():
         except:
             pass
 
+    def updateQuaternion(self):
+        try:
+            self.ser.write(b'q')
+            self.UHQuaternion = list(map(lambda x:float(x),self.ser.readline().decode('utf-8').split("+")))
+
+        except:
+            pass
+
+    def shakeCheck(self):
+        try:
+            self.updateQuaternion()
+            buff1 = np.array(self.UHQuaternion)
+            time.sleep(0.5)
+            self.updateQuaternion()
+            buff2 = np.array(self.UHQuaternion)
+            
+            print(np.dot(buff1,buff2))
+
+        except:
+            pass
+
+
+
     def stimulate(self,padNum):
         try:
             padNum = str(padNum)
@@ -133,7 +159,7 @@ class UH():
             pass
 
 
-    def gestureDataCollection(self):
+    def gestureDataCollection(self,*event):
         targetGesture1PR = np.array([0,0,0,0,0,0,0,0])
         targetGesture2PR = np.array([0,0,0,0,0,0,0,0])
 
@@ -197,23 +223,26 @@ class UH():
         self.X_train_std = sc.fit_transform(X_train)
         self.X_test_std = sc.transform(X_test)
 
-    def gestureLogisticClassifier(self):
+    def gestureLogisticClassifier(self,*event):
         self.clfLogistic = LogisticRegression()
         self.clfLogistic.fit(self.X_train_std,self.y_train)
 
-    def gestureSVMClassifier(self):
+    def gestureSVMClassifier(self,*event):
         self.clfSVM.fit(self.X_train_std,self.y_train)
         
 
-    def checkGesture(self):
+    def checkGesture(self,*event):
+        self.updatePhotosensors()
         print("チェック用のジェスチャを入力してください")
-        time.sleep(5)
+        time.sleep(1)
         checkFlag = self.clfSVM.predict(self.UHPR)
 
         if checkFlag == 0:
+            self.nowGesture = "Close"
             print("手を閉じています")
 
         else:
+            self.nowGesture = "Open"
             print("手を開いています")
 
     def loop():
@@ -231,6 +260,19 @@ if __name__ == '__main__':
     uhand = UH()
     uhand.gestureDataCollection()
     uhand.gestureSVMClassifier()
-    uhand.checkGesture()
+
+    uhand.updateAngle()
+
+    for _ in range(1000):
+        uhand.updateAngle()
+        uhand.checkGesture()
+        print(uhand.UHAngle)
+#        uhand.updateQuaternion()
+#        print(uhand.UHQuaternion)
+#        uhand.shakeCheck()
+
+
+
+
 
 
