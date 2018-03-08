@@ -10,6 +10,9 @@ from sklearn.model_selection import ShuffleSplit
 from sklearn.preprocessing import StandardScaler
 from sklearn import svm
 
+from sklearn.metrics import accuracy_score
+
+import csv
 
 class UH():
     
@@ -37,6 +40,7 @@ class UH():
         devices = []
 
 
+        #接続に関する部分（手動で行うかオートで行うか）
         try:
             if sys.argv[1] == "manual":
 
@@ -71,7 +75,7 @@ class UH():
             except:
                 sys.exit()
 
-
+    #フォトリフレクタの更新を行う関数
     def updatePhotosensors(self):
         try:
             self.ser.write(b'c')
@@ -79,7 +83,7 @@ class UH():
 
         except:
             pass
-
+    #角度の値の更新を行う関数
     def updateAngle(self):
         try:
             self.ser.write(b'A')
@@ -88,6 +92,7 @@ class UH():
         except:
             pass
 
+    #フォトリフレクタと角度の値の更新を同時に行う
     def updateAnglePR(self):
         try:
             self.ser.write(b'C')
@@ -98,6 +103,7 @@ class UH():
         except:
             pass
 
+    #加速度と角速度の値を更新する
     def updateUH3DGyroAccel(self):
         try:
             self.ser.write(b'a')
@@ -106,10 +112,19 @@ class UH():
         except:
             pass
 
+    #クォータニオンの値を更新する
     def updateQuaternion(self):
         try:
             self.ser.write(b'q')
             self.UHQuaternion = list(map(lambda x:float(x),self.ser.readline().decode('utf-8').split("+")))
+
+        except:
+            pass
+
+    #クォータニオンの値をリセットする
+    def resetQuaternion(self):
+        try:
+            self.ser.write('r')
 
         except:
             pass
@@ -127,8 +142,7 @@ class UH():
         except:
             pass
 
-
-
+    #電気刺激を行う
     def stimulate(self,padNum):
         try:
             padNum = str(padNum)
@@ -137,6 +151,7 @@ class UH():
         except:
             pass
 
+    #電気刺激の強さをあげる
     def setLevelUp(self):
         try:
             ser.write(b'h')
@@ -144,6 +159,7 @@ class UH():
         except:
             pass
 
+    #電気刺激の強さを下げる
     def setLevelDown(self):
         try:
             ser.write(b'l')
@@ -151,6 +167,7 @@ class UH():
         except:
             pass
 
+    #振動させる
     def vibrate(self):
         try:
             ser.write(b'b')
@@ -158,7 +175,7 @@ class UH():
         except:
             pass
 
-
+    #ジェスチャ識別器の作成のために必要なデータを集める
     def gestureDataCollection(self,*event):
         targetGesture1PR = np.array([0,0,0,0,0,0,0,0])
         targetGesture2PR = np.array([0,0,0,0,0,0,0,0])
@@ -223,19 +240,20 @@ class UH():
         self.X_train_std = sc.fit_transform(X_train)
         self.X_test_std = sc.transform(X_test)
 
+    #ロジスティック回帰を用いてジェスチャの識別を行う
     def gestureLogisticClassifier(self,*event):
-        self.clfLogistic = LogisticRegression()
         self.clfLogistic.fit(self.X_train_std,self.y_train)
 
+    #SVMを利用してジェスチャの識別を行う
     def gestureSVMClassifier(self,*event):
         self.clfSVM.fit(self.X_train_std,self.y_train)
         
-
+    #ジェスチャの正答率をチェックする
     def checkGesture(self,*event):
         self.updatePhotosensors()
         print("チェック用のジェスチャを入力してください")
         time.sleep(1)
-        checkFlag = self.clfSVM.predict(self.UHPR)
+        checkFlag = self.clfLogistic.predict(self.UHPR)
 
         if checkFlag == 0:
             self.nowGesture = "Close"
@@ -244,6 +262,35 @@ class UH():
         else:
             self.nowGesture = "Open"
             print("手を開いています")
+
+#        predict = self.clfSVM.predict(self.X_test_std)
+        predict = self.clfLogistic.predict(self.X_test_std)
+        print(accuracy_score(self.y_test,predict),end="<-- accuracy score")
+#        print(self.y_test)
+#        print(predict)
+
+    #csvとしてデータを吐き出す
+    def csvOutput(self):
+        f = open('output.csv','w')
+        writer = csv.writer(f,lineterminator='\n')
+        csvlist = []
+        
+        for data in self.X_test_std:
+            print(data,end="data")
+            csvlist.append(data)
+
+        csvlist.append("---------")
+
+        for data2 in self.y_test:
+            csvlist.append(data2)
+
+        print(self.X_test_std)
+        print(self.y_test)
+
+        writer.writerow(csvlist)
+
+        f.close()
+
 
     def loop():
         stopFlag = True
@@ -259,9 +306,11 @@ class UH():
 if __name__ == '__main__':
     uhand = UH()
     uhand.gestureDataCollection()
-    uhand.gestureSVMClassifier()
+    #uhand.gestureSVMClassifier()
+    uhand.gestureLogisticClassifier()
 
     uhand.updateAngle()
+    uhand.csvOutput()
 
     for _ in range(1000):
         uhand.updateAngle()
@@ -270,9 +319,4 @@ if __name__ == '__main__':
 #        uhand.updateQuaternion()
 #        print(uhand.UHQuaternion)
 #        uhand.shakeCheck()
-
-
-
-
-
 
