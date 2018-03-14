@@ -292,14 +292,15 @@ class UH():
         f.close()
 
 
-    def loop():
+    @classmethod
+    def loop(uhand,interval=0.1):
         stopFlag = True
         
         while stpoFlag:
             #以下にループさせたい処理を書いてください##
             
             ###########################################
-            time.sleep(0.1)
+            time.sleep(interval)
 
 
 
