@@ -265,7 +265,11 @@ class UH():
 
 #        predict = self.clfSVM.predict(self.X_test_std)
         predict = self.clfLogistic.predict(self.X_test_std)
-        print(accuracy_score(self.y_test,predict),end="<-- accuracy score")
+
+        from sklearn.metrics import confusion_matrix
+        print(confusion_matrix(self.y_test,predict),end="<-- confusion matrix")
+        
+
 #        print(self.y_test)
 #        print(predict)
 
@@ -293,11 +297,12 @@ class UH():
 
 
     @classmethod
-    def loop(uhand,interval=0.1):
+    def loop(self,uhand,interval=0.1):
         stopFlag = True
         
-        while stpoFlag:
+        while stopFlag:
             #以下にループさせたい処理を書いてください##
+            print("hello")
             
             ###########################################
             time.sleep(interval)
@@ -306,13 +311,13 @@ class UH():
 
 if __name__ == '__main__':
     uhand = UH()
-    uhand.gestureDataCollection()
-    #uhand.gestureSVMClassifier()
-    uhand.gestureLogisticClassifier()
-
-    uhand.updateAngle()
-    uhand.csvOutput()
-
+#    uhand.gestureDataCollection()
+#    #uhand.gestureSVMClassifier()
+#    uhand.gestureLogisticClassifier()
+#
+#    uhand.updateAngle()
+#    uhand.csvOutput()
+#
     for _ in range(1000):
         uhand.updateAngle()
         uhand.checkGesture()
