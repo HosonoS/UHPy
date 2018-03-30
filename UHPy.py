@@ -40,6 +40,9 @@ class UH():
         devices = []
 
 
+        #ジェスチャ識別のフィットが必要かどうか
+        self.count = 0
+
         #接続に関する部分（手動で行うかオートで行うか）
         try:
             if sys.argv[1] == "manual":
@@ -180,39 +183,24 @@ class UH():
             pass
 
     #ジェスチャ識別器の作成のために必要なデータを集める
-    def gestureDataCollection(self,choseAll=True,*event):
+    def gestureDataCollection(self,*event):
 
-        if choseAll:
-            targetGesture1PR = np.array([0,0,0,0,0,0,0,0])
-            targetGesture2PR = np.array([0,0,0,0,0,0,0,0])
+        targetGesture1PR = np.array([0,0,0,0,0,0,0,0])
+        targetGesture2PR = np.array([0,0,0,0,0,0,0,0])
         
-        else:
-            targetGesture1PR = np.array([0,0])
-            targetGesture2PR = np.array([0,0])
 
         print("手を開いてください")
 
         #１つ目のジェスチャのデータ取得
         while len(targetGesture1PR) < 101:
             self.updatePhotosensors()
-
-            #特に使うフォトリフレクタの番号の指定がない場合
-            if choseAll == True:
-                PRbuff = np.array(self.UHPR)
+            PRbuff = np.array(self.UHPR)
                 
-            #指定をした場合
-            else:
-                PRbuff = np.array(self.UHPR[:2])
-
             #フォトリフレクタから撮ってきたリストの要素の数が足りない場合の対応
-            if len(PRbuff) < 8 and choseAll == True:
-               pass
+            if len(PRbuff) < 8:
+                pass
 
-            elif len(PRbuff) < 2 and choseAll == False:
-               pass
-            
             else:
-                len(PRbuff)
                 targetGesture1PR = np.vstack((targetGesture1PR,PRbuff))
 
             print(len(targetGesture1PR))
@@ -227,19 +215,10 @@ class UH():
         #２つ目のジェスチャのデータ取得
         while len(targetGesture2PR) < 101:
             self.updatePhotosensors()
-
-            #特に使うフォトリフレクタの番号の指定がない場合
-            if choseAll == True:
-                PRbuff = np.array(self.UHPR)
-
-            else:
-                PRbuff = np.array(self.UHPR[:2])
+            PRbuff = np.array(self.UHPR)
 
             #フォトリフレクタから撮ってきたリストの要素の数が足りない場合の対応
-            if len(PRbuff) < 8 and choseAll == True:
-                pass
-
-            elif len(PRbuff) < 2 and choseAll == False:
+            if len(PRbuff) < 8:
                 pass
 
             else:
@@ -271,30 +250,30 @@ class UH():
 
         self.X_test_std = sc.transform(self.X_test)
 
+    #ロジスティック回帰を用いてジェスチャの識別を行う
+    def gestureLogisticClassifier(self,*event):
+        self.clfLogistic.fit(self.X_train_std,self.y_train)
+        
+    #SVMを利用してジェスチャの識別を行う
+    def gestureSVMClassifier(self,*event):
+        self.clfSVM.fit(self.X_train_std,self.y_train)
+
 
 
         
-    #ジェスチャの正答率をチェックする
-    def checkGesture(self,clfType="",*event):
-
-        #ロジスティック回帰を用いてジェスチャの識別を行う
-        def gestureLogisticClassifier(self,*event):
-            self.clfLogistic.fit(self.X_train_std,self.y_train)
-        
-        #SVMを利用してジェスチャの識別を行う
-        def gestureSVMClassifier(self,*event):
-            self.clfSVM.fit(self.X_train_std,self.y_train)
-
+    def checkGesture(self,clfType="logistic",*event):
 
         self.updatePhotosensors()
         print("チェック用のジェスチャを入力してください")
         time.sleep(3)
 
-        if clfType == "logistic":
-            gestureLogisticClassifier()
+        #一回めのみ識別器のフィットを行う
+        if self.count == 0:
+            if clfType == "logistic":
+                self.gestureLogisticClassifier()
 
-        elif clfType == "SVM":
-            gestureSVMClassifier()
+            elif clfType == "SVM":
+                self.gestureSVMClassifier()
 
         #現在の手の状態をチェックする
         checkFlag = self.clfLogistic.predict(self.UHPR)
@@ -329,13 +308,14 @@ class UH():
         csvlist = []
         
         for data in self.X_test_std:
-            print(data,end="data")
-            csvlist.append(data)
+            for data_raw in data:
+                csvlist.append(data_raw)
 
         csvlist.append("---------")
 
         for data2 in self.y_test:
-            csvlist.append(data2)
+            for data_raw2 in data2:
+                csvlist.append(data2)
 
         print(self.X_test_std)
         print(self.y_test)
@@ -350,6 +330,7 @@ if __name__ == '__main__':
     uhand = UH()
     uhand.gestureDataCollection()
     uhand.checkGesture()
+#    uhand.csvOutput()
 
     for _ in range(1000):
         uhand.updatePhotosensors()
