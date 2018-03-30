@@ -23,7 +23,7 @@ class UH():
         self.UHQuaternion = []
         #self.ser = serial.Serial('/dev/cu.usbserial-AK05D8TP', 115200,timeout=1)
 
-        self.X_train_std,self.y_train,self.X_test_std,y_test = None,None,None,None
+        self.X_train_std,self.y_train,self.X_test_std,self.y_test = None,None,None,None
 
         self.clfLogistic = LogisticRegression()
         self.clfSVM = svm.SVC()
@@ -61,6 +61,9 @@ class UH():
                 except:
                     print("can't open")
                     sys.exit()
+
+#        except IndexError:
+#            print("No Device Connected")
 
         except:
             for info in ports:
@@ -129,6 +132,7 @@ class UH():
         except:
             pass
 
+    #降った動作を識別(未完成)
     def shakeCheck(self):
         try:
             self.updateQuaternion()
@@ -176,31 +180,45 @@ class UH():
             pass
 
     #ジェスチャ識別器の作成のために必要なデータを集める
-    def gestureDataCollection(self,*event):
-        targetGesture1PR = np.array([0,0,0,0,0,0,0,0])
-        targetGesture2PR = np.array([0,0,0,0,0,0,0,0])
+    def gestureDataCollection(self,choseAll=True,*event):
+
+        if choseAll:
+            targetGesture1PR = np.array([0,0,0,0,0,0,0,0])
+            targetGesture2PR = np.array([0,0,0,0,0,0,0,0])
+        
+        else:
+            targetGesture1PR = np.array([0,0])
+            targetGesture2PR = np.array([0,0])
 
         print("手を開いてください")
 
         #１つ目のジェスチャのデータ取得
         while len(targetGesture1PR) < 101:
             self.updatePhotosensors()
-            PRbuff = np.array(self.UHPR)
 
-            if len(PRbuff) < 8:
-                pass
+            #特に使うフォトリフレクタの番号の指定がない場合
+            if choseAll == True:
+                PRbuff = np.array(self.UHPR)
+                
+            #指定をした場合
+            else:
+                PRbuff = np.array(self.UHPR[:2])
+
+            #フォトリフレクタから撮ってきたリストの要素の数が足りない場合の対応
+            if len(PRbuff) < 8 and choseAll == True:
+               pass
+
+            elif len(PRbuff) < 2 and choseAll == False:
+               pass
             
             else:
+                len(PRbuff)
                 targetGesture1PR = np.vstack((targetGesture1PR,PRbuff))
+
+            print(len(targetGesture1PR))
             
         targetGesture1PR = np.delete(targetGesture1PR,0,0)
-            #targetGesture1PR.append(self.UHPR)
         
-#        if len(targetGesture1PR) > 100:
-#            difference = len(targetGesture1PR) - 100
-#            for i in range(difference):
-#                targetGesture1PR[i]
-#
         print("3秒待機してください")
         time.sleep(3)
 
@@ -209,9 +227,19 @@ class UH():
         #２つ目のジェスチャのデータ取得
         while len(targetGesture2PR) < 101:
             self.updatePhotosensors()
-            PRbuff = np.array(self.UHPR)
 
-            if len(PRbuff) < 8:
+            #特に使うフォトリフレクタの番号の指定がない場合
+            if choseAll == True:
+                PRbuff = np.array(self.UHPR)
+
+            else:
+                PRbuff = np.array(self.UHPR[:2])
+
+            #フォトリフレクタから撮ってきたリストの要素の数が足りない場合の対応
+            if len(PRbuff) < 8 and choseAll == True:
+                pass
+
+            elif len(PRbuff) < 2 and choseAll == False:
                 pass
 
             else:
@@ -233,27 +261,44 @@ class UH():
         
         train_index, test_index = next(ss.split(X,y))
 
-        X_train,X_test = X[train_index],X[test_index]
+        self.X_train,self.X_test = X[train_index],X[test_index]
+
         self.y_train,self.y_test = y[train_index],y[test_index]
 
         sc = StandardScaler()
-        self.X_train_std = sc.fit_transform(X_train)
-        self.X_test_std = sc.transform(X_test)
+        self.X_train_std = sc.fit_transform(self.X_train)
+        
 
-    #ロジスティック回帰を用いてジェスチャの識別を行う
-    def gestureLogisticClassifier(self,*event):
-        self.clfLogistic.fit(self.X_train_std,self.y_train)
+        self.X_test_std = sc.transform(self.X_test)
 
-    #SVMを利用してジェスチャの識別を行う
-    def gestureSVMClassifier(self,*event):
-        self.clfSVM.fit(self.X_train_std,self.y_train)
+
+
         
     #ジェスチャの正答率をチェックする
-    def checkGesture(self,*event):
+    def checkGesture(self,clfType="",*event):
+
+        #ロジスティック回帰を用いてジェスチャの識別を行う
+        def gestureLogisticClassifier(self,*event):
+            self.clfLogistic.fit(self.X_train_std,self.y_train)
+        
+        #SVMを利用してジェスチャの識別を行う
+        def gestureSVMClassifier(self,*event):
+            self.clfSVM.fit(self.X_train_std,self.y_train)
+
+
         self.updatePhotosensors()
         print("チェック用のジェスチャを入力してください")
-        time.sleep(1)
+        time.sleep(3)
+
+        if clfType == "logistic":
+            gestureLogisticClassifier()
+
+        elif clfType == "SVM":
+            gestureSVMClassifier()
+
+        #現在の手の状態をチェックする
         checkFlag = self.clfLogistic.predict(self.UHPR)
+        print(checkFlag)
 
         if checkFlag == 0:
             self.nowGesture = "Close"
@@ -264,14 +309,18 @@ class UH():
             print("手を開いています")
 
 #        predict = self.clfSVM.predict(self.X_test_std)
-        predict = self.clfLogistic.predict(self.X_test_std)
+#        predict = self.clfLogistic.predict(self.UHPR[:2])
+#        print(predict)
+#
+#        predict = self.clfLogistic.predict(self.y_train)
+#        print(self.y_train)
 
-        from sklearn.metrics import confusion_matrix
-        print(confusion_matrix(self.y_test,predict),end="<-- confusion matrix")
+        print(self.clfLogistic.score(self.X_test_std,self.y_test),"<----score")
+
+       # from sklearn.metrics import confusion_matrix
+       # print(confusion_matrix(self.y_test,self.),end="<-- confusion matrix")
         
 
-#        print(self.y_test)
-#        print(predict)
 
     #csvとしてデータを吐き出す
     def csvOutput(self):
@@ -296,33 +345,13 @@ class UH():
         f.close()
 
 
-    @classmethod
-    def loop(self,uhand,interval=0.1):
-        stopFlag = True
-        
-        while stopFlag:
-            #以下にループさせたい処理を書いてください##
-            print("hello")
-            
-            ###########################################
-            time.sleep(interval)
-
-
 
 if __name__ == '__main__':
     uhand = UH()
-#    uhand.gestureDataCollection()
-#    #uhand.gestureSVMClassifier()
-#    uhand.gestureLogisticClassifier()
-#
-#    uhand.updateAngle()
-#    uhand.csvOutput()
-#
-    for _ in range(1000):
-        uhand.updateAngle()
-        uhand.checkGesture()
-        print(uhand.UHAngle)
-#        uhand.updateQuaternion()
-#        print(uhand.UHQuaternion)
-#        uhand.shakeCheck()
+    uhand.gestureDataCollection()
+    uhand.checkGesture()
 
+    for _ in range(1000):
+        uhand.updatePhotosensors()
+        uhand.checkGesture()
+        print(uhand.UHPR)
