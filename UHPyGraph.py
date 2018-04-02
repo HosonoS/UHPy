@@ -261,7 +261,7 @@ class UH():
         y3 = y2+np.ones(100,dtype=int)
 
         X = np.r_[targetGesture1PR,targetGesture2PR,targetGesture3PR]
-        y = np.r_[y1,y2,y3]
+        self.y = np.r_[y1,y2,y3]
 
         ss = ShuffleSplit(n_splits=1,
                           train_size=0.7,
@@ -269,13 +269,19 @@ class UH():
                           random_state=0
                           )
         
-        train_index, test_index = next(ss.split(X,y))
+        train_index, test_index = next(ss.split(X,self.y))
 
         self.X_train,self.X_test = X[train_index],X[test_index]
 
-        self.y_train,self.y_test = y[train_index],y[test_index]
+        self.y_train,self.y_test = self.y[train_index],self.y[test_index]
 
         sc = StandardScaler()
+        
+        sc2 = StandardScaler()
+
+        
+        self.X_std = sc2.fit_transform(X)
+
         self.X_train_std = sc.fit_transform(self.X_train)
         
 
@@ -296,7 +302,7 @@ class UH():
 
         self.updatePhotosensors()
         print("チェック用のジェスチャを入力してください")
-        time.sleep(3)
+        time.sleep(1)
 
         #一回めのみ識別器のフィットを行う
         if self.count == 0:
@@ -331,6 +337,9 @@ class UH():
        # from sklearn.metrics import confusion_matrix
        # print(confusion_matrix(self.y_test,self.),end="<-- confusion matrix")
         
+#    def graphUHPR(self):
+#        plot_decision_regions(X=self.X_std[:,[0,1]],y=self.y,clf=self.clfLogistic)
+#        plt.show()
 
 
     #csvとしてデータを吐き出す
@@ -362,6 +371,7 @@ if __name__ == '__main__':
     uhand = UH()
     uhand.gestureDataCollection()
     uhand.checkGesture()
+#    uhand.graphUHPR()
 #    uhand.csvOutput()
 
     for _ in range(1000):
