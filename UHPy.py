@@ -12,6 +12,11 @@ from sklearn import svm
 
 from sklearn.metrics import accuracy_score
 
+#マルチクラスのグラフ出力用
+import matplotlib.pyplot as plt
+from mlxtend.plotting import plot_decision_regions
+
+#csvファイル出力用
 import csv
 
 class UH():
@@ -25,7 +30,7 @@ class UH():
 
         self.X_train_std,self.y_train,self.X_test_std,self.y_test = None,None,None,None
 
-        self.clfLogistic = LogisticRegression()
+        self.clfLogistic = LogisticRegression(penalty="l1")
         self.clfSVM = svm.SVC()
 
         self.nowGesture = None
@@ -38,6 +43,9 @@ class UH():
         ports = list_ports.comports()
 
         devices = []
+
+        #文字入力のカウント
+        self.charCount = 0
 
 
         #ジェスチャ識別のフィットが必要かどうか
@@ -187,9 +195,9 @@ class UH():
 
         targetGesture1PR = np.array([0,0,0,0,0,0,0,0])
         targetGesture2PR = np.array([0,0,0,0,0,0,0,0])
-        
+        targetGesture3PR = np.array([0,0,0,0,0,0,0,0])        
 
-        print("手を開いてください")
+        print("ジェスチャ１をおこなってください")
 
         #１つ目のジェスチャのデータ取得
         while len(targetGesture1PR) < 101:
@@ -205,12 +213,13 @@ class UH():
 
             print(len(targetGesture1PR))
             
+        #1個目のデータは不安定なので削除
         targetGesture1PR = np.delete(targetGesture1PR,0,0)
         
         print("3秒待機してください")
         time.sleep(3)
 
-        print("手を閉じてください")
+        print("ジェスチャ２をおこなってください")
         
         #２つ目のジェスチャのデータ取得
         while len(targetGesture2PR) < 101:
@@ -224,13 +233,38 @@ class UH():
             else:
                 targetGesture2PR = np.vstack((targetGesture2PR,PRbuff))
 
+        #1個目のデータは不安定なので削除
         targetGesture2PR = np.delete(targetGesture2PR,0,0)
         
+        print("3秒待機してください")
+        time.sleep(3)
+
+        print("ジェスチャ３をおこなってください")
+
+        #3つ目のジェスチャのデータ取得
+        while len(targetGesture3PR) < 101:
+            self.updatePhotosensors()
+            PRbuff = np.array(self.UHPR)
+
+            #フォトリフレクタから撮ってきたリストの要素の数が足りない場合の対応
+            if len(PRbuff) < 8:
+                pass
+
+            else:
+                targetGesture3PR = np.vstack((targetGesture3PR,PRbuff))
+
+        #1個目のデータは不安定なので削除
+        targetGesture3PR = np.delete(targetGesture3PR,0,0)
+        
+        
+
+
         y1 = np.zeros(100,dtype=int)
         y2 = np.ones(100,dtype=int)
+        y3 = y2+np.ones(100,dtype=int)
 
-        X = np.r_[targetGesture1PR,targetGesture2PR]
-        y = np.r_[y1,y2]
+        X = np.r_[targetGesture1PR,targetGesture2PR,targetGesture3PR]
+        self.y = np.r_[y1,y2,y3]
 
         ss = ShuffleSplit(n_splits=1,
                           train_size=0.7,
@@ -238,13 +272,19 @@ class UH():
                           random_state=0
                           )
         
-        train_index, test_index = next(ss.split(X,y))
+        train_index, test_index = next(ss.split(X,self.y))
 
         self.X_train,self.X_test = X[train_index],X[test_index]
 
-        self.y_train,self.y_test = y[train_index],y[test_index]
+        self.y_train,self.y_test = self.y[train_index],self.y[test_index]
 
         sc = StandardScaler()
+        
+        sc2 = StandardScaler()
+
+        
+        self.X_std = sc2.fit_transform(X)
+
         self.X_train_std = sc.fit_transform(self.X_train)
         
 
@@ -265,7 +305,7 @@ class UH():
 
         self.updatePhotosensors()
         print("チェック用のジェスチャを入力してください")
-        time.sleep(3)
+        time.sleep(1)
 
         #一回めのみ識別器のフィットを行う
         if self.count == 0:
@@ -280,12 +320,13 @@ class UH():
         print(checkFlag)
 
         if checkFlag == 0:
-            self.nowGesture = "Close"
-            print("手を閉じています")
+            print("ジェスチャ1")
 
-        else:
-            self.nowGesture = "Open"
-            print("手を開いています")
+        elif checkFlag == 1:
+            print("ジェスチャ2")
+
+        elif checkFlag == 2:
+            print("ジェスチャ3")
 
 #        predict = self.clfSVM.predict(self.X_test_std)
 #        predict = self.clfLogistic.predict(self.UHPR[:2])
@@ -294,11 +335,14 @@ class UH():
 #        predict = self.clfLogistic.predict(self.y_train)
 #        print(self.y_train)
 
-        print(self.clfLogistic.score(self.X_test_std,self.y_test),"<----score")
+        print(self.clfLogistic.score(self.X_test_std,self.y_test),"<----Accuracy Score")
 
        # from sklearn.metrics import confusion_matrix
        # print(confusion_matrix(self.y_test,self.),end="<-- confusion matrix")
         
+#    def graphUHPR(self):
+#        plot_decision_regions(X=self.X_std[:,[0,1]],y=self.y,clf=self.clfLogistic)
+#        plt.show()
 
 
     #csvとしてデータを吐き出す
@@ -330,6 +374,7 @@ if __name__ == '__main__':
     uhand = UH()
     uhand.gestureDataCollection()
     uhand.checkGesture()
+#    uhand.graphUHPR()
 #    uhand.csvOutput()
 
     for _ in range(1000):
